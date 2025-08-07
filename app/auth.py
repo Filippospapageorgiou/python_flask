@@ -18,6 +18,7 @@ def is_valid_email(email):
     return re.match(pattern, email) is not None
 
 def is_strong_password(password:str):
+    #second change
     if len(password) < 8:
         return False, "Password must be at least 8 charachters long"
     if not re.search(r'[A-Z]',password):
