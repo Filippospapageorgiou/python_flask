@@ -7,15 +7,6 @@ Entry point για την Bank api εφαρμογή
 """
 import os
 from app import create_app
-from dotenv import load_dotenv
-
-# Debug: Φόρτωσε το .env file explicitly
-load_dotenv()
-
-# Debug: Έλεγχος environment variables
-print(f"🔍 DATABASE_URL found: {bool(os.environ.get('DATABASE_URL'))}")
-print(f"🔍 SECRET_KEY found: {bool(os.environ.get('SECRET_KEY'))}")
-
 
 #δημιουργούμε το app instance χρησιμοποιώντας το factory pattern
 app = create_app()

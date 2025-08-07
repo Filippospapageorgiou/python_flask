@@ -18,16 +18,6 @@ class Config:
     # Σαν το spring.datasource.url
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL')
     
-    # Debug: Εκτυπώνουμε την τιμή για debugging
-    print(f"🔧 Config: DATABASE_URL = {SQLALCHEMY_DATABASE_URI}")
-    
-    if not SQLALCHEMY_DATABASE_URI:
-        print("⚠️  WARNING: DATABASE_URL not found in environment variables!")
-        print("📄 Make sure you have a .env file with DATABASE_URL")
-        # Fallback για development
-        SQLALCHEMY_DATABASE_URI = 'sqlite:///fallback_bank.db'
-        print(f"🔧 Using fallback SQLite: {SQLALCHEMY_DATABASE_URI}")
-    
     # Απενεργοποιεί το SQLAlchemy event system (performance optimization)
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
