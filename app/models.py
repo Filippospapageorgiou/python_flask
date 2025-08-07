@@ -1,10 +1,10 @@
 """
-Database Models για την Bank API - ΔΙΟΡΘΩΜΕΝΗ ΕΚΔΟΣΗ
+Database Models για την Bank API - ΕΝΗΜΕΡΩΜΕΝΗ ΕΚΔΟΣΗ
 
 SQLAlchemy ORM models - παρόμοια με @Entity classes στο Spring Boot
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal
 from werkzeug.security import generate_password_hash, check_password_hash
 from app import db
@@ -16,7 +16,7 @@ class User(db.Model):
     """
     __tablename__ = 'users'
     
-    # Primary Key - ΣΩΣΤΟ: db.Integer (όχι db.integer)
+    # Primary Key
     id = db.Column(db.Integer, primary_key=True)
     
     # User Information
@@ -26,9 +26,11 @@ class User(db.Model):
     last_name = db.Column(db.String(50), nullable=False)
     phone = db.Column(db.String(20), unique=True, nullable=True)
     
-    # Timestamps - παρόμοια με @CreationTimestamp στο Spring
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    # Timestamps - χρήση του νέου datetime.now(timezone.utc)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = db.Column(db.DateTime, 
+                          default=lambda: datetime.now(timezone.utc), 
+                          onupdate=lambda: datetime.now(timezone.utc))
     
     # Relationships - παρόμοια με @OneToMany στο Spring
     # Ένας user μπορεί να έχει πολλούς λογαριασμούς
@@ -79,8 +81,10 @@ class Account(db.Model):
     is_active = db.Column(db.Boolean, default=True, nullable=False)
     
     # Timestamps
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = db.Column(db.DateTime, 
+                          default=lambda: datetime.now(timezone.utc), 
+                          onupdate=lambda: datetime.now(timezone.utc))
     
     # Relationships
     # Ένας λογαριασμός έχει πολλές συναλλαγές
@@ -119,20 +123,27 @@ class Transaction(db.Model):
     # Account που επηρεάζεται
     account_id = db.Column(db.Integer, db.ForeignKey('accounts.id'), nullable=False)
     
-    # Για transfers - destination account
-    to_account_id = db.Column(db.Integer, db.ForeignKey('accounts.id'), nullable=True)
+    # Για transfers - destination account (χωρίς foreign key, μόνο index)
+    to_account_id = db.Column(db.Integer, nullable=True, index=True)  # Index για γρήγορες αναζητήσεις
     
     # Balance μετά την συναλλαγή (για audit purposes)
     balance_after = db.Column(db.Numeric(precision=12, scale=2), nullable=False)
     
     # Timestamp
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
     
-    # Relationship για to_account
-    to_account = db.relationship('Account', foreign_keys=[to_account_id])
+    def get_to_account(self):
+        """
+        Helper method για να πάρουμε το destination account
+        Χωρίς foreign key relationship - manual lookup
+        """
+        if self.to_account_id:
+            return Account.query.get(self.to_account_id)
+        return None
     
     def to_dict(self):
         """Μετατρέπει το model σε dictionary"""
+        to_account = self.get_to_account()
         return {
             'id': self.id,
             'transaction_type': self.transaction_type,
@@ -141,7 +152,7 @@ class Transaction(db.Model):
             'balance_after': str(self.balance_after),
             'created_at': self.created_at.isoformat(),
             'account_number': self.account.account_number,
-            'to_account_number': self.to_account.account_number if self.to_account else None
+            'to_account_number': to_account.account_number if to_account else None
         }
     
     def __repr__(self):
