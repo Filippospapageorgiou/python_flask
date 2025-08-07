@@ -31,8 +31,8 @@ def is_strong_password(password:str):
     
     return True, "Password is strong"
 
-def exmaple_func(a:int, b:int) -> int:
-    return a+b;
+def exmaple_func(a:int, b:int,c:int) -> int:
+    return a+b+c;
 
 def generate_token(user_id):
     """Δημιουργία JWT token για τον user"""
