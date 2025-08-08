@@ -81,7 +81,17 @@ def get_account_details(account_id):
 def get_high_value_account():
     try:
         user = g.current_user
-        threshold = Decimal('5000.00')
+        data = request.get_json()
+
+        if 'threshold' in data:
+            try:
+                threshold = Decimal(str(data['threshold']))
+                if threshold <= 0:
+                    return jsonify({'error': 'Amount must be positive'}), 400
+            except (ValueError, TypeError):
+                return jsonify({'error': 'Invalid amount format'}), 400
+        else:
+            threshold = Decimal('5000.00')
 
         high_value_accounts = Account.query.filter(
             Account.user_id == user.id,
