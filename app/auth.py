@@ -2,9 +2,10 @@
 Authentication BluePrint για Bank api
 Περιλαμβάνει routes Για register και Login
 """
-from flask import Blueprint, request, jsonify, current_app
+from flask import Blueprint, request, jsonify, current_app, g
 from app import db
 from app.models import User
+from app.decorators import token_required
 import jwt
 from datetime import datetime, timedelta, timezone
 import re
@@ -171,6 +172,7 @@ def login():
         }), 500
     
 @auth_bp.route('/profile', methods=['GET'])
+@token_required
 def get_profile():
     """
     Get User Profile (requires authentication)
@@ -178,13 +180,51 @@ def get_profile():
     Headers: Authorization: Bearer <token>
     """
     try:
-        # Αυτό θα το υλοποιήσουμε στο επόμενο βήμα με decorator
+        user  = g.current_user
         return jsonify({
-            'message': 'Profile endpoint - Authentication decorator needed'
-        }), 501
-        
+            'message': 'Profile retrieved successfully',
+            'user': user.to_dict()
+        }), 200
     except Exception as e:
         current_app.logger.error(f"Profile error: {str(e)}")
         return jsonify({
             'error': 'Internal server error'
         }), 500
+
+@auth_bp.route('/update', methods=['POST'])
+@token_required
+def update_profile():
+    try:
+        user = g.current_user
+        data = request.get_json()
+
+        allowed_fields = ['first_name','last_name','phone']
+        updated = False
+
+        for field in allowed_fields:
+            if field in data and data[field] is not None:
+                value = str(data[field].strip())
+                if value:
+                    setattr(user, field, value)
+                    updated = True
+        
+        if updated:
+            user.updated_at = datetime.now(timezone.utc)
+            db.session.commit()
+            return jsonify({
+                'status' : 'success',
+                'message' : 'Profile updated successfully'
+            }),200
+        else:
+            return jsonify({
+                'status' : 'error',
+                'message' : 'No valid fields provided for update'
+            }),400
+
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Profile update error : {str(e)}")
+        return jsonify({
+            'status' : 'error',
+            'message' : 'Internal server error'
+        }),500
