@@ -73,3 +73,7 @@ def deposit_money():
         return jsonify({
             'error':'Internal server error'
         }), 500
+    
+
+def exmaple_func(a, b):
+    return a + b
