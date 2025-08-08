@@ -31,6 +31,9 @@ def create_app(config_name=None):
     from app.auth import auth_bp
     app.register_blueprint(auth_bp)
 
+    from app.accounts import accounts_bp
+    app.register_blueprint(accounts_bp)
+
     
     #6 Error handlers - gloabal exception handling
     @app.errorhandler(404)
