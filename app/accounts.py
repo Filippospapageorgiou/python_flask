@@ -198,8 +198,7 @@ def create_account():
             balance = Decimal("0.00")
 
         account_type = data.get('account_type', 'savings')
-        if account_type not in ['savings', 'checking']:
-            return jsonify({'error': 'Invalid account type'}), 400
+        
         
         # Έλεγχος αν ο user έχει ήδη λογαριασμό αυτού του τύπου
         existing_account = Account.query.filter_by(
@@ -240,3 +239,76 @@ def create_account():
         db.session.rollback()
         current_app.logger.error(f"Get account details error: {str(e)}")
         return jsonify({'error': 'Internal server error'}), 500
+    
+@accounts_bp.route('/deactivate_account', methods = ['POST'])
+@token_required
+def deactivate():
+    try:
+        user = g.current_user
+        data = request.get_json()
+
+        raw_id = data.get('account_id')
+        if raw_id is not None and str(raw_id) != "":
+            try:
+                account_id = int(str(raw_id))
+            except Exception:
+                return jsonify({'error': 'Invalid account_id format'}), 400
+        
+        account = Account.query.filter_by(
+            id=account_id,
+            user_id=user.id,
+            is_active=True
+        ).first()
+
+        if not account:
+            return jsonify({'error': f'Account with id: {account_id} not found'}), 400
+
+        account.is_active = False
+
+        db.session.commit()
+        
+        return jsonify({
+            'status' : 'success',
+            'message': 'Account deactivated successfully',
+        }), 201
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Get account details error: {str(e)}")
+        return jsonify({'error': 'Internal server error'}), 500  
+
+@accounts_bp.route('/activate_account', methods = ['POST'])
+@token_required
+def activate_account():
+    try:
+        user = g.current_user
+        data = request.get_json()
+
+        raw_id = data.get('account_id')
+        if raw_id is not None and str(raw_id) != "":
+            try:
+                account_id = int(str(raw_id))
+            except Exception:
+                return jsonify({'error': 'Invalid account_id format'}), 400
+        
+        account = Account.query.filter_by(
+            id=account_id,
+            user_id=user.id,
+            is_active=False
+        ).first()
+
+        if not account:
+            return jsonify({'error': f'Account with id: {account_id} not found'}), 400
+    
+        account.is_active = True
+
+        db.session.commit()
+
+        return jsonify({
+            'status' : 'success',
+            'message': 'Account deactivated successfully',
+        }), 201
+
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Get account details error: {str(e)}")
+        return jsonify({'error': 'Internal server error'}), 500  
